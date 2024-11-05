@@ -56,7 +56,6 @@ class Scenario(BaseScenario):
         world.height = 0.6
         num_good_agents = num_good
         num_adversaries = num_adversaries
-        num_landmarks = 3
         num_agents = num_adversaries + num_good_agents
 
         # add agents
@@ -66,11 +65,11 @@ class Scenario(BaseScenario):
             base_name = "red" if agent.adversary else "blue"
             base_index = i if i < num_adversaries else i - num_adversaries
             agent.name = f"{base_name}_{base_index}"
-            agent.collide = True  # if not agent.adversary else False
+            agent.collide = True
             agent.movable = True
             agent.silent = True
             agent.size = 0.1
-            agent.accel = 5.0  # if not agent.adversary else 0
+            agent.accel = 5.0
             agent.max_speed = 10.0
             # increased mass to prevent agents from being pushed back by the ball
             agent.initial_mass = 5
@@ -109,20 +108,19 @@ class Scenario(BaseScenario):
                 if agent.adversary
                 else np.array([0.35, 0.35, 0.85])
             )
-            # random properties for landmarks
-        for i, landmark in enumerate(world.landmarks):
-            landmark.color = np.array([0.25, 0.25, 0.25])
 
         world.goals[0].color = np.array([0.2, 0.3, 1.0])
         world.goals[1].color = np.array([1.0, 0.3, 0.3])
+
         # set random initial states
-        # world.agents[0].state.p_pos = np_random.uniform(-1, 0, world.dim_p)
-        world.agents[0].state.p_pos = np.array([0.6, 0])
+        world.agents[0].state.p_pos = np.array([
+            np_random.uniform(-1, 0),  # First element: random in (-1, 0)
+            np_random.uniform(-1, 1)   # Second element: random in (-1, 1)
+        ])
+        # world.agents[0].state.p_pos = np.array([-0.6, 0])
         world.agents[0].state.p_vel = np.zeros(world.dim_p)
         world.agents[0].state.c = np.zeros(world.dim_c)
-        # world.agents[1].state.p_pos = np.array([1, 0])
-        # world.agents[1].state.p_vel = np.zeros(world.dim_p)
-        # world.agents[1].state.c = np.zeros(world.dim_c)
+
         # set ball state
         world.ball.state.p_pos = np.array([0, 0])
         world.ball.state.p_vel = np.zeros(world.dim_p)
@@ -157,84 +155,94 @@ class Scenario(BaseScenario):
 
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark
-        # main_reward = (
-        #     self.adversary_reward(agent, world)
-        #     if agent.adversary
-        #     else self.agent_reward(agent, world)
-        # )
         main_reward = self.adversary_reward(agent, world)
         return main_reward
-
-    def agent_reward(self, agent, world):
-        # Agents are negatively rewarded if caught by adversaries
-        rew = 0
-        shape = False
-        adversaries = self.adversaries(world)
-        if (
-            shape
-        ):  # reward can optionally be shaped (increased reward for increased distance from adversary)
-            for adv in adversaries:
-                rew += 0.1 * np.sqrt(
-                    np.sum(np.square(agent.state.p_pos - adv.state.p_pos))
-                )
-        if agent.collide:
-            for a in adversaries:
-                if self.is_collision(a, agent):
-                    rew -= 10
-
-        # agents are penalized for exiting the screen, so that they can be caught by the adversaries
-        def bound(x, border=1):
-            if x < border-0.1:
-                return 0
-            if x < border:
-                return (x - border-0.1) * 10
-            return min(np.exp(2 * x - 2), 10)
-
-        for p in range(world.dim_p):
-            x = abs(agent.state.p_pos[p])
-            rew -= bound(x)
-
-        return rew
 
     def adversary_reward(self, agent, world):
         rew = 0
 
         # 1. Positive reward for kicking the ball
         if self.is_collision(agent, world.ball):
-            rew += 10  # Increased positive reward for touching the ball to encourage interaction
+            rew += 7  # Increased positive reward for touching the ball to encourage interaction
 
         # 2. Negative reward based on distance to the ball (only if not touching the ball)
-        distance_to_ball = np.linalg.norm(agent.state.p_pos - world.ball.state.p_pos)
-        max_distance = np.sqrt(world.width**2 + world.height**2)  # Diagonal distance of the field
+        distance_to_ball = np.linalg.norm(
+            agent.state.p_pos - world.ball.state.p_pos)
+        # Diagonal distance of the field
+        max_distance = np.sqrt(world.width**2 + world.height**2)
         if not self.is_collision(agent, world.ball):
-            rew -= (distance_to_ball / max_distance) * 2  # Smaller negative reward proportional to distance to the ball
+            # Smaller negative reward proportional to distance to the ball
+            rew -= (distance_to_ball / max_distance) * 2
 
         # 3. Positive reward for reducing ball's distance to the opponent's goal
         opponent_goal = world.goals[0] if agent.adversary else world.goals[1]
-        distance_to_goal = np.linalg.norm(world.ball.state.p_pos - opponent_goal.state.p_pos)
-        previous_distance_to_goal = getattr(agent, "previous_distance_to_goal", None)
-        if previous_distance_to_goal is not None and abs(distance_to_goal - previous_distance_to_goal) > 1e-3:
-            rew += 2.5  # Reward for getting the ball closer to the goal
+        distance_to_goal = np.linalg.norm(
+            world.ball.state.p_pos - opponent_goal.state.p_pos)
+        previous_distance_to_goal = getattr(
+            agent, "previous_distance_to_goal", None)
+        # if distance_to_goal < previous_distance_to_goal:
+        #     rew += 2.5  # Increased reward for getting the ball closer to the goal
         agent.previous_distance_to_goal = distance_to_goal
 
         # 4. Positive reward for scoring a goal
         if distance_to_goal < opponent_goal.size:
-            rew += 200  # Huge positive reward for getting the ball into the goal
+            rew += 500  # Huge positive reward for getting the ball into the goal
 
-        # 5. Penalty for inactivity (optional, to encourage movement)
+        # 5. Negative reward if the ball is closer to the agent's own goal
+        own_goal = world.goals[1] if agent.adversary else world.goals[0]
+        distance_to_own_goal = np.linalg.norm(
+            world.ball.state.p_pos - own_goal.state.p_pos)
+        # Larger negative reward if the ball is closer to own goal
+        rew -= (1 - distance_to_own_goal / max_distance) * 1
+
+        # 6. Huge penalty if the ball goes into the agent's own goal
+        if distance_to_own_goal < own_goal.size:
+            rew -= 500  # Increased penalty for getting the ball into own goal
+
+        # 7. Penalty for inactivity to encourage movement
         if np.linalg.norm(agent.state.p_vel) < 1e-3:
-            rew -= 1.0  # Smaller penalty for standing still to prevent inactivity
+            rew -= 2.0  # Increased penalty for standing still to prevent inactivity
 
+        # 8. Penalty for ball going out of the field, but positive reward for preventing it
+        if abs(world.ball.state.p_pos[0]) > world.width or abs(world.ball.state.p_pos[1]) > world.height:
+            rew -= 20  # Increased negative reward for the ball going out of the field
+
+        # 9. Positive reward for kicking the ball towards the goal direction (only if the ball is moving)
+        ball_velocity = np.linalg.norm(world.ball.state.p_vel)
+        if ball_velocity > 1e-3:  # Ensure the ball is moving
+            ball_to_goal_vector = opponent_goal.state.p_pos - world.ball.state.p_pos
+            agent_to_ball_vector = agent.state.p_pos - world.ball.state.p_pos
+
+            # Calculate the cosine of the angle between the vectors
+            cos_theta = np.dot(ball_to_goal_vector, agent_to_ball_vector) / (
+                np.linalg.norm(ball_to_goal_vector) *
+                np.linalg.norm(agent_to_ball_vector)
+            )
+            # Clip to handle floating point errors
+            angle = np.arccos(cos_theta)
+
+            # Reward if the angle is within 0 to 30 degrees
+            if np.deg2rad(150) <= angle <= np.deg2rad(180):
+                # Increased reward for pushing the ball towards the opponent's goal
+                rew += (np.rad2deg(angle)-150)/3
+
+        # 10. Penalty if the ball is not moving
+        if ball_velocity <= 1e-3:
+            rew -= 2  # Penalty for the ball being stationary to encourage the agent to keep it moving
+            
         return rew
-
 
     def observation(self, agent, world):
         # get positions of all entities in this agent's reference frame
         entity_pos = []
         entity_vel = []
-        for entity in (world.goals + [world.ball]):
-            entity_pos.append(entity.state.p_pos - agent.state.p_pos)
-            entity_vel.append(entity.state.p_vel)
+
+        opponent_goal = world.goals[0] if agent.adversary else world.goals[1]
+        entity_pos.append(opponent_goal.state.p_pos - world.ball.state.p_pos)
+        entity_pos.append(opponent_goal.state.p_pos - agent.state.p_pos)
+
+        entity_pos.append(world.ball.state.p_pos - agent.state.p_pos)
+        entity_vel.append(world.ball.state.p_vel)
         # communication of all other agents
         comm = []
         other_pos = []

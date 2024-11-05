@@ -196,6 +196,7 @@ class SimpleEnv(AECEnv):
                 self.terminations = {name: True for name in self.agents}
             else:
                 self.termination_count += 1
+                
 
         global_reward = 0.0
         if self.local_ratio is not None:

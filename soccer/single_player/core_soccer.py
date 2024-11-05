@@ -80,7 +80,7 @@ class Agent(Entity):  # properties of agent entities
         # script behavior to execute
         self.action_callback = None
         # distance to goal
-        self.previous_distance_to_goal = None
+        self.previous_distance_to_goal = 0
 
 
 class World:  # multi-agent world

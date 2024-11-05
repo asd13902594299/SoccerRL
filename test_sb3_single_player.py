@@ -10,12 +10,15 @@ def train():
     env = ss.concat_vec_envs_v1(
         env, 8, num_cpus=1, base_class="stable_baselines3")
 
-    model = PPO("MlpPolicy", env, verbose=1)
+    model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0003)
     # model.learn(total_timesteps=1048576)
     # model.learn(total_timesteps=524288)
     # model.learn(total_timesteps=300000)
     model.learn(total_timesteps=262144)
+    # model.learn(total_timesteps=196608)
+    # model.learn(total_timesteps=163840) 
     # model.learn(total_timesteps=131072) 
+    # model.learn(total_timesteps=100000) 
     # model.learn(total_timesteps=65536) 
     model.save("single_player")
 
@@ -25,7 +28,7 @@ def eval():
     env = soccer.env(
         max_cycles=100, render_mode="human")
 
-    model = PPO.load("single_player")
+    model = PPO.load("single_player", device="cuda")
     obs = env.reset()
     print(env.possible_agents)
     rewards = {agent: 0 for agent in env.possible_agents}
@@ -54,5 +57,5 @@ def eval():
 
 
 if __name__ == "__main__":
-    # train()
+    train()
     eval()
