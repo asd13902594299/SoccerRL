@@ -10,11 +10,11 @@ def train():
     env = ss.concat_vec_envs_v1(
         env, 8, num_cpus=1, base_class="stable_baselines3")
 
-    model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0003)
+    model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=32)
     # model.learn(total_timesteps=1048576)
-    # model.learn(total_timesteps=524288)
+    model.learn(total_timesteps=524288)
     # model.learn(total_timesteps=300000)
-    model.learn(total_timesteps=262144)
+    # model.learn(total_timesteps=262144)
     # model.learn(total_timesteps=196608)
     # model.learn(total_timesteps=163840) 
     # model.learn(total_timesteps=131072) 
@@ -57,5 +57,5 @@ def eval():
 
 
 if __name__ == "__main__":
-    train()
+    # train()
     eval()
