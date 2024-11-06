@@ -14,7 +14,7 @@ class raw_env(SimpleEnv, EzPickle):
         self,
         num_good=1,
         num_adversaries=0,
-        num_obstacles=3,
+        num_obstacles=0,
         max_cycles=25,
         continuous_actions=False,
         render_mode=None,
@@ -40,7 +40,7 @@ class raw_env(SimpleEnv, EzPickle):
             continuous_actions=continuous_actions,
             dynamic_rescaling=dynamic_rescaling,
         )
-        self.metadata["name"] = "simple_tag_v3"
+        self.metadata["name"] = "simple_soccer"
 
 
 env = make_env(raw_env)
@@ -117,7 +117,6 @@ class Scenario(BaseScenario):
             np_random.uniform(-world.width, world.width),  # First element: random in (-1, 1)
             np_random.uniform(-world.height, world.height)   # Second element: random in (-1, 1)
         ])
-        # world.agents[0].state.p_pos = np.array([1, 0.6])
         world.agents[0].state.p_vel = np.zeros(world.dim_p)
         world.agents[0].state.c = np.zeros(world.dim_c)
 
@@ -127,17 +126,6 @@ class Scenario(BaseScenario):
         # set goal colors and positions
         for goal in world.goals:
             goal.state.p_vel = np.zeros(world.dim_p)  # Goals are immovable
-
-    def benchmark_data(self, agent, world):
-        # returns data for benchmarking purposes
-        if agent.adversary:
-            collisions = 0
-            for a in self.good_agents(world):
-                if self.is_collision(a, agent):
-                    collisions += 1
-            return collisions
-        else:
-            return 0
 
     def is_collision(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
@@ -154,11 +142,6 @@ class Scenario(BaseScenario):
         return [agent for agent in world.agents if agent.adversary]
 
     def reward(self, agent, world):
-        # Agents are rewarded based on minimum agent distance to each landmark
-        main_reward = self.adversary_reward(agent, world)
-        return main_reward
-
-    def adversary_reward(self, agent, world):
         rew = 0
 
         # 1. Positive reward for kicking the ball
@@ -237,28 +220,19 @@ class Scenario(BaseScenario):
         entity_pos = []
         entity_vel = []
 
+        # reference position: ball_agent, agent_goal, ball_goal
         opponent_goal = world.goals[0] if agent.adversary else world.goals[1]
         entity_pos.append(opponent_goal.state.p_pos - world.ball.state.p_pos)
         entity_pos.append(opponent_goal.state.p_pos - agent.state.p_pos)
-
         entity_pos.append(world.ball.state.p_pos - agent.state.p_pos)
+        
+        # ball velocity
         entity_vel.append(world.ball.state.p_vel)
-        # communication of all other agents
-        comm = []
-        other_pos = []
-        other_vel = []
-        for other in world.agents:
-            if other is agent:
-                continue
-            comm.append(other.state.c)
-            other_pos.append(other.state.p_pos - agent.state.p_pos)
-            if not other.adversary:
-                other_vel.append(other.state.p_vel)
+        
         return np.concatenate(
             [agent.state.p_vel]
             + [agent.state.p_pos]
             + entity_pos
             + entity_vel
-            + other_pos
-            + other_vel
+            
         )
