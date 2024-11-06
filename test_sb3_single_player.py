@@ -8,7 +8,7 @@ def train():
     env = ss.multiagent_wrappers.pad_observations_v0(env)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(
-        env, 8, num_cpus=1, base_class="stable_baselines3")
+        env, 8, num_cpus=4, base_class="stable_baselines3")
 
     model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=32)
     # model.learn(total_timesteps=1048576)
@@ -26,7 +26,7 @@ def train():
 
 def eval():
     env = soccer.env(
-        max_cycles=100, render_mode="human")
+        max_cycles=200, render_mode="human")
 
     model = PPO.load("single_player", device="cuda")
     obs = env.reset()

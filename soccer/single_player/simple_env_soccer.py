@@ -49,8 +49,8 @@ class SimpleEnv(AECEnv):
         self.render_mode = render_mode
         pygame.init()
         self.viewer = None
-        self.width = 1200
-        self.height = 700
+        self.width =  1200
+        self.height = 1200
         self.screen = pygame.Surface([self.width, self.height])
         self.max_size = 1
         self.game_font = pygame.freetype.Font(
@@ -332,9 +332,6 @@ class SimpleEnv(AECEnv):
         pygame.draw.rect(self.screen, (0, 0, 255),
                          (field_left + field_width, goal_y, goal_width, goal_height))
 
-        # update bounds to center around agent
-        all_poses = [entity.state.p_pos for entity in self.world.entities]
-        # cam_range = np.max(np.abs(np.array(all_poses)))
         cam_range = 1
 
         # The scaling factor is used for dynamic rescaling of the rendering - a.k.a Zoom In/Zoom Out effect
@@ -364,10 +361,7 @@ class SimpleEnv(AECEnv):
             pygame.draw.circle(self.screen, entity.color * 200, (x, y), radius)
             pygame.draw.circle(self.screen, (0, 0, 0),
                                (x, y), radius, 1)  # borders
-            # assert (
-            #     0 < x < self.width and 0 < y < self.height
-            # ), f"Coordinates {(x, y)} are out of bounds."
-
+           
     def close(self):
         if self.screen is not None:
             pygame.quit()

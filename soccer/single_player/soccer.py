@@ -114,10 +114,10 @@ class Scenario(BaseScenario):
 
         # set random initial states
         world.agents[0].state.p_pos = np.array([
-            np_random.uniform(-1, 0),  # First element: random in (-1, 0)
-            np_random.uniform(-1, 1)   # Second element: random in (-1, 1)
+            np_random.uniform(-world.width, world.width),  # First element: random in (-1, 1)
+            np_random.uniform(-world.height, world.height)   # Second element: random in (-1, 1)
         ])
-        # world.agents[0].state.p_pos = np.array([-0.6, 0])
+        # world.agents[0].state.p_pos = np.array([1, 0.6])
         world.agents[0].state.p_vel = np.zeros(world.dim_p)
         world.agents[0].state.c = np.zeros(world.dim_c)
 
