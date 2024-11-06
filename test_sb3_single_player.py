@@ -1,10 +1,10 @@
-from soccer.single_player import soccer
+from soccer.single_player import soccer_single_player
 import supersuit as ss
 from stable_baselines3 import PPO
 
 
 def train():
-    env = soccer.parallel_env(max_cycles=100, render_mode=None)
+    env = soccer_single_player.parallel_env(max_cycles=100, render_mode=None)
     env = ss.multiagent_wrappers.pad_observations_v0(env)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(
@@ -25,7 +25,7 @@ def train():
     env.close()
 
 def eval():
-    env = soccer.env(
+    env = soccer_single_player.env(
         max_cycles=200, render_mode="human")
 
     model = PPO.load("single_player", device="cuda")
