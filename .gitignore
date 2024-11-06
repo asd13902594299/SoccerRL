@@ -1,0 +1,4 @@
+*.zip
+.vscode/
+**/__pycache__/
+model/
