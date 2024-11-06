@@ -13,7 +13,7 @@ class raw_env(SimpleEnv, EzPickle):
     def __init__(
         self,
         num_good=1,
-        num_adversaries=0,
+        num_adversaries=1,
         num_obstacles=0,
         max_cycles=25,
         continuous_actions=False,
@@ -114,15 +114,25 @@ class Scenario(BaseScenario):
 
         # set random initial states
         world.agents[0].state.p_pos = np.array([
-            np_random.uniform(-world.width, world.width),  # First element: random in (-1, 1)
+            np_random.uniform(-world.width, 0),  # First element: random in (-1, 1)
             np_random.uniform(-world.height, world.height)   # Second element: random in (-1, 1)
         ])
+        # world.agents[0].state.p_pos = np.array([-0.6, 0])
         world.agents[0].state.p_vel = np.zeros(world.dim_p)
         world.agents[0].state.c = np.zeros(world.dim_c)
+        
+        world.agents[1].state.p_pos = np.array([
+            np_random.uniform(0, world.width),  # First element: random in (-1, 1)
+            np_random.uniform(-world.height, world.height)   # Second element: random in (-1, 1)
+        ])
+        # world.agents[1].state.p_pos = np.array([0.6, 0])
+        world.agents[1].state.p_vel = np.zeros(world.dim_p)
+        world.agents[1].state.c = np.zeros(world.dim_c)
 
         # set ball state
         world.ball.state.p_pos = np.array([0, 0])
         world.ball.state.p_vel = np.zeros(world.dim_p)
+        
         # set goal colors and positions
         for goal in world.goals:
             goal.state.p_vel = np.zeros(world.dim_p)  # Goals are immovable
@@ -146,7 +156,7 @@ class Scenario(BaseScenario):
 
         # 1. Positive reward for kicking the ball
         if self.is_collision(agent, world.ball):
-            rew += 1  # Increased positive reward for touching the ball to encourage interaction
+            rew += 7  # Increased positive reward for touching the ball to encourage interaction
 
         # 2. Negative reward based on distance to the ball (only if not touching the ball)
         distance_to_ball = np.linalg.norm(
@@ -188,7 +198,7 @@ class Scenario(BaseScenario):
 
         # 8. Penalty for ball going out of the field, but positive reward for preventing it
         if abs(world.ball.state.p_pos[0]) > world.width or abs(world.ball.state.p_pos[1]) > world.height:
-            rew -= 50  # Increased negative reward for the ball going out of the field
+            rew -= 20  # Increased negative reward for the ball going out of the field
 
         # 9. Positive reward for kicking the ball towards the goal direction (only if the ball is moving)
         ball_velocity = np.linalg.norm(world.ball.state.p_vel)
@@ -207,7 +217,7 @@ class Scenario(BaseScenario):
             # Reward if the angle is within 0 to 30 degrees
             if np.deg2rad(150) <= angle <= np.deg2rad(180):
                 # Increased reward for pushing the ball towards the opponent's goal
-                rew += (np.rad2deg(angle)-150)/2
+                rew += (np.rad2deg(angle)-150)/3
 
         # 10. Penalty if the ball is not moving
         if ball_velocity <= 1e-3:
@@ -234,5 +244,4 @@ class Scenario(BaseScenario):
             + [agent.state.p_pos]
             + entity_pos
             + entity_vel
-            
         )
