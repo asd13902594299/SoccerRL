@@ -1,4 +1,4 @@
-single_player.zip
-MATD3_trained_agent.pt
+*.zip
 .vscode/
 **/__pycache__/
+model/
