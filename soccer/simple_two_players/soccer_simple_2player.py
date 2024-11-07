@@ -144,14 +144,6 @@ class Scenario(BaseScenario):
         dist_min = agent1.size + agent2.size
         return True if dist < dist_min else False
 
-    # return all agents that are not adversaries
-    def good_agents(self, world):
-        return [agent for agent in world.agents if not agent.adversary]
-
-    # return all adversarial agents
-    def adversaries(self, world):
-        return [agent for agent in world.agents if agent.adversary]
-
     # return the angle between two vectors (in radians)
     def angle_between(self, v1, v2):
         # Calculate the cosine of the angle between the vectors
@@ -173,7 +165,7 @@ class Scenario(BaseScenario):
             rew += 5  # Positive reward for touching the ball to encourage interaction
         elif self.is_collision(opponent, world.ball):
             world.last_ball_touch = opponent.name
-            rew -= 3 # Negative reward for the opponent touching the ball
+            rew -= 3  # Negative reward for the opponent touching the ball
 
         # 2. Negative reward based on distance to the ball (only if not touching the ball)
         distance_to_ball = np.linalg.norm(
@@ -186,8 +178,10 @@ class Scenario(BaseScenario):
 
         # 3. Positive reward for reducing ball's distance to the opponent's goal
         opponent_goal = world.goals[0] if agent.adversary else world.goals[1]
-        distance_to_goal = np.linalg.norm(world.ball.state.p_pos - opponent_goal.state.p_pos)
-        previous_distance_to_goal = getattr(agent, "previous_distance_to_goal", None)
+        distance_to_goal = np.linalg.norm(
+            world.ball.state.p_pos - opponent_goal.state.p_pos)
+        previous_distance_to_goal = getattr(
+            agent, "previous_distance_to_goal", None)
 
         # Reward for reducing the distance to the opponent's goal, with greater weight for significant progress
         if previous_distance_to_goal is not None:
@@ -196,7 +190,6 @@ class Scenario(BaseScenario):
                 rew += 1.5 * distance_difference  # Reward scales with the amount of progress made
 
         agent.previous_distance_to_goal = distance_to_goal
-
 
         # 4. Positive reward for scoring a goal
         if distance_to_goal < opponent_goal.size:
@@ -239,15 +232,17 @@ class Scenario(BaseScenario):
             angle_opponent = self.angle_between(
                 ball_to_opponent_vector, agent_to_ball_vector)
             if np.deg2rad(150) <= angle_opponent <= np.deg2rad(180):
-                rew -= (np.rad2deg(angle_opponent)-150)*0.9  # Negative reward for kicking the ball towards the opponent
-            
+                # Negative reward for kicking the ball towards the opponent
+                rew -= (np.rad2deg(angle_opponent)-150)*0.9
+
             # Positive reward for kicking the ball to the opponent's back (goal-agent-opponent-ball-opponent's goal)
             agent_to_opponent_vector = opponent.state.p_pos - agent.state.p_pos
-            angle_between = self.angle_between(agent_to_opponent_vector, -ball_to_opponent_vector)
-            
+            angle_between = self.angle_between(
+                agent_to_opponent_vector, -ball_to_opponent_vector)
+
             def in_opponent_field(agent, object):
                 return object.state.p_pos[0] > 0 if agent.adversary else object.state.p_pos[0] < 0
-            
+
             # Reward if the angle indicates that the ball is behind the opponent relative to the agent
             if (np.deg2rad(150) <= angle_between <= np.deg2rad(180)) and in_opponent_field(agent, world.ball):
                 rew += 3  # Positive reward for kicking the ball towards the opponent's back
@@ -274,7 +269,7 @@ class Scenario(BaseScenario):
         entity_pos.append(opponent_goal.state.p_pos - agent.state.p_pos)
         entity_pos.append(own_goal.state.p_pos - world.ball.state.p_pos)
         entity_pos.append(own_goal.state.p_pos - agent.state.p_pos)
-        
+
         entity_pos.append(world.ball.state.p_pos - agent.state.p_pos)
 
         # ball velocity

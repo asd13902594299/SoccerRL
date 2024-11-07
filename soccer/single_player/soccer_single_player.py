@@ -114,8 +114,10 @@ class Scenario(BaseScenario):
 
         # set random initial states
         world.agents[0].state.p_pos = np.array([
-            np_random.uniform(-world.width, world.width),  # First element: random in (-1, 1)
-            np_random.uniform(-world.height, world.height)   # Second element: random in (-1, 1)
+            # First element: random in (-1, 1)
+            np_random.uniform(-world.width, world.width),
+            # Second element: random in (-1, 1)
+            np_random.uniform(-world.height, world.height)
         ])
         world.agents[0].state.p_vel = np.zeros(world.dim_p)
         world.agents[0].state.c = np.zeros(world.dim_c)
@@ -132,14 +134,6 @@ class Scenario(BaseScenario):
         dist = np.sqrt(np.sum(np.square(delta_pos)))
         dist_min = agent1.size + agent2.size
         return True if dist < dist_min else False
-
-    # return all agents that are not adversaries
-    def good_agents(self, world):
-        return [agent for agent in world.agents if not agent.adversary]
-
-    # return all adversarial agents
-    def adversaries(self, world):
-        return [agent for agent in world.agents if agent.adversary]
 
     def reward(self, agent, world):
         rew = 0
@@ -212,7 +206,7 @@ class Scenario(BaseScenario):
         # 10. Penalty if the ball is not moving
         if ball_velocity <= 1e-3:
             rew -= 2  # Penalty for the ball being stationary to encourage the agent to keep it moving
-            
+
         return rew
 
     def observation(self, agent, world):
@@ -225,14 +219,14 @@ class Scenario(BaseScenario):
         entity_pos.append(opponent_goal.state.p_pos - world.ball.state.p_pos)
         entity_pos.append(opponent_goal.state.p_pos - agent.state.p_pos)
         entity_pos.append(world.ball.state.p_pos - agent.state.p_pos)
-        
+
         # ball velocity
         entity_vel.append(world.ball.state.p_vel)
-        
+
         return np.concatenate(
             [agent.state.p_vel]
             + [agent.state.p_pos]
             + entity_pos
             + entity_vel
-            
+
         )
