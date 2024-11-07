@@ -40,7 +40,7 @@ class raw_env(SimpleEnv, EzPickle):
             continuous_actions=continuous_actions,
             dynamic_rescaling=dynamic_rescaling,
         )
-        self.metadata["name"] = "simple_soccer"
+        self.metadata["name"] = "simple_2players_soccer"
 
 
 env = make_env(raw_env)
@@ -167,10 +167,13 @@ class Scenario(BaseScenario):
         # print(f'last_ball_touch: {world.last_ball_touch}')
         opponent = world.agents[0] if agent.adversary else world.agents[1]
 
-        # 1. Positive reward for kicking the ball
+        # 1. Reward for kicking the ball
         if self.is_collision(agent, world.ball):
             world.last_ball_touch = agent.name
-            rew += 5  # Increased positive reward for touching the ball to encourage interaction
+            rew += 5  # Positive reward for touching the ball to encourage interaction
+        elif self.is_collision(opponent, world.ball):
+            world.last_ball_touch = opponent.name
+            rew -= 3 # Negative reward for the opponent touching the ball
 
         # 2. Negative reward based on distance to the ball (only if not touching the ball)
         distance_to_ball = np.linalg.norm(
@@ -190,7 +193,7 @@ class Scenario(BaseScenario):
         if previous_distance_to_goal is not None:
             distance_difference = previous_distance_to_goal - distance_to_goal
             if distance_difference > 0:
-                rew += 0.7 * distance_difference  # Reward scales with the amount of progress made
+                rew += 1.5 * distance_difference  # Reward scales with the amount of progress made
 
         agent.previous_distance_to_goal = distance_to_goal
 
@@ -204,7 +207,7 @@ class Scenario(BaseScenario):
         distance_to_own_goal = np.linalg.norm(
             world.ball.state.p_pos - own_goal.state.p_pos)
         # Larger negative reward if the ball is closer to own goal
-        rew -= (1 - distance_to_own_goal / max_distance) * 2
+        rew -= (1 - (distance_to_own_goal / max_distance)) * 2
 
         # 6. Huge penalty if the ball goes into the agent's own goal
         if distance_to_own_goal < own_goal.size:
@@ -227,7 +230,6 @@ class Scenario(BaseScenario):
 
             angle = self.angle_between(
                 ball_to_goal_vector, agent_to_ball_vector)
-
             # Reward if the angle is within 0 to 30 degrees
             if np.deg2rad(150) <= angle <= np.deg2rad(180):
                 # Increased reward for pushing the ball towards the opponent's goal
@@ -236,17 +238,19 @@ class Scenario(BaseScenario):
             # Negative reward for kicking the ball towards the opponent
             angle_opponent = self.angle_between(
                 ball_to_opponent_vector, agent_to_ball_vector)
-
-            # Penalty if the angle is within 0 to 30 degrees (kicking towards the opponent)
             if np.deg2rad(150) <= angle_opponent <= np.deg2rad(180):
-                rew -= (np.rad2deg(angle)-150)*0.95  # Negative reward for kicking the ball towards the opponent
+                rew -= (np.rad2deg(angle_opponent)-150)*0.9  # Negative reward for kicking the ball towards the opponent
             
             # Positive reward for kicking the ball to the opponent's back (goal-agent-opponent-ball-opponent's goal)
             agent_to_opponent_vector = opponent.state.p_pos - agent.state.p_pos
-            angle_between = self.angle_between(agent_to_opponent_vector, agent_to_ball_vector)
+            angle_between = self.angle_between(agent_to_opponent_vector, -ball_to_opponent_vector)
+            
+            def in_opponent_field(agent, object):
+                return object.state.p_pos[0] > 0 if agent.adversary else object.state.p_pos[0] < 0
+            
             # Reward if the angle indicates that the ball is behind the opponent relative to the agent
-            if np.deg2rad(150) <= angle_between <= np.deg2rad(180):
-                rew += 4  # Positive reward for kicking the ball towards the opponent's back
+            if (np.deg2rad(150) <= angle_between <= np.deg2rad(180)) and in_opponent_field(agent, world.ball):
+                rew += 3  # Positive reward for kicking the ball towards the opponent's back
 
         # 10. Penalty if the ball is not moving
         if ball_velocity <= 1e-3:

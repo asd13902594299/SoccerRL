@@ -10,9 +10,9 @@ def train():
     env = ss.concat_vec_envs_v1(
         env, 8, num_cpus=8, base_class="stable_baselines3")
 
-    model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=64)
-    # model.learn(total_timesteps=3100000)
-    model.learn(total_timesteps=1500000)
+    model = PPO("MlpPolicy", env, verbose=1, device="cuda", learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=256)
+    model.learn(total_timesteps=3100000)
+    # model.learn(total_timesteps=1500000)
     # model.learn(total_timesteps=1048576)
     # model.learn(total_timesteps=700000)
     # model.learn(total_timesteps=524288)
