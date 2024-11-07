@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from pettingzoo.mpe import simple_spread_v3
+from soccer.simple_four_players import soccer_simple_4player
 from tqdm import trange
 
 from agilerl.components.multi_agent_replay_buffer import MultiAgentReplayBuffer
@@ -45,7 +45,7 @@ def train():
 
     num_envs = 8
     # Define the simple speaker listener environment as a parallel environment
-    env = simple_spread_v3.parallel_env(max_cycles=25, continuous_actions=True)
+    env = soccer_simple_4player.parallel_env(max_cycles=175, render_mode=None)
     env = AsyncPettingZooVecEnv([lambda: env for _ in range(num_envs)])
     env.reset()
 
@@ -136,7 +136,7 @@ def train():
     )
 
     # Define training loop parameters
-    max_steps = 200000  # Max steps (default: 2000000)
+    max_steps = 300000  # Max steps (default: 2000000)
     learning_delay = 0  # Steps before starting learning
     evo_steps = 1000  # Evolution frequency
     eval_steps = None  # Evaluation steps per episode - go until done
@@ -287,8 +287,8 @@ def eval():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Configure the environment
-    env = simple_spread_v3.parallel_env(
-        max_cycles=25,continuous_actions=True, render_mode="human")
+    env = soccer_simple_4player.parallel_env(
+        max_cycles=200,continuous_actions=True, render_mode="human")
     env.reset()
 
     agent_ids = env.agents
@@ -352,5 +352,5 @@ def eval():
 
 
 if __name__ == "__main__":
-    # train()
+    train()
     eval()
