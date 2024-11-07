@@ -108,6 +108,8 @@ class World:  # multi-agent world
         # physical extents of the environment
         self.width = None
         self.height = None
+        # record which agent touched the ball last
+        self.last_ball_touch = None
 
     # return all entities in the world
 
@@ -172,20 +174,24 @@ class World:  # multi-agent world
 
     # gather physical forces acting on entities
     def apply_environment_force(self, p_force):
-        # simple (but inefficient) collision response
-        for a, entity_a in enumerate(self.entities):
-            for b, entity_b in enumerate(self.entities):
-                if b <= a:
-                    continue
-                [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
-                if f_a is not None:
-                    if p_force[a] is None:
-                        p_force[a] = 0.0
-                    p_force[a] = f_a + p_force[a]
-                if f_b is not None:
-                    if p_force[b] is None:
-                        p_force[b] = 0.0
-                    p_force[b] = f_b + p_force[b]
+        # Optimized collision response by limiting redundant calculations
+        entity_pairs = []
+        for a in range(len(self.entities)):
+            for b in range(a + 1, len(self.entities)):
+                entity_pairs.append((a, b))
+
+        for a, b in entity_pairs:
+            entity_a = self.entities[a]
+            entity_b = self.entities[b]
+            [f_a, f_b] = self.get_collision_force(entity_a, entity_b)
+            if f_a is not None:
+                if p_force[a] is None:
+                    p_force[a] = 0.0
+                p_force[a] += f_a
+            if f_b is not None:
+                if p_force[b] is None:
+                    p_force[b] = 0.0
+                p_force[b] += f_b
         return p_force
 
     # integrate physical state
