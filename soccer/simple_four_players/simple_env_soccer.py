@@ -192,7 +192,6 @@ class SimpleEnv(AECEnv):
 
         if self.world.step():
             if self.termination_count > 5:
-                # pass
                 self.terminations = {name: True for name in self.agents}
             else:
                 self.termination_count += 1
