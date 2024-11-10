@@ -3,6 +3,7 @@ import torch
 from soccer.simple_four_players import soccer_simple_4player
 from pettingzoo.mpe import simple_speaker_listener_v4
 from tqdm import trange
+from tqdm import tqdm
 
 from agilerl.components.multi_agent_replay_buffer import MultiAgentReplayBuffer
 from agilerl.vector.pz_async_vec_env import AsyncPettingZooVecEnv
@@ -16,6 +17,9 @@ from agilerl.utils.utils import create_population
 def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("===== AgileRL Online Multi-Agent Demo =====")
+    print("Using device: ", device, "\n Device Name: ", torch.cuda.get_device_name(0))
+    # Extra newlines so above prints aren't overwritten by the future tqdm.write(...) calls
+    print("\n\n\n\nTraining starting in a moment...")
 
     # Define the network configuration
     NET_CONFIG = {
@@ -260,13 +264,20 @@ def train():
             for episode_scores in pop_episode_scores
         ]
 
-        print(f"--- Global steps {total_steps} ---")
-        print(f"Steps {[agent.steps[-1] for agent in pop]}")
-        print(f"Scores: {mean_scores}")
-        print(f'Fitnesses: {["%.2f"%fitness for fitness in fitnesses]}')
-        print(
-            f'5 fitness avgs: {["%.2f"%np.mean(agent.fitness[-5:]) for agent in pop]}'
-        )
+        # Clear the previous lines by moving the cursor up and replacing with spaces
+        tqdm.write("\x1b[A\r" + " " * 100 + "\x1b[A\r")
+        tqdm.write("\x1b[A\r" + " " * 100 + "\x1b[A\r")
+        tqdm.write("\x1b[A\r" + " " * 100 + "\x1b[A\r")
+        tqdm.write("\x1b[A\r" + " " * 100 + "\x1b[A\r")
+        tqdm.write("\x1b[A\r" + " " * 100 + "\x1b[A\r")
+
+        # Print training information
+        # Progress bar not included here, it automatically happens with trange
+        tqdm.write(f"\r--- Global steps {total_steps} ---\n"
+                   f"Steps {[agent.steps[-1] for agent in pop]}\n"
+                   f"Scores: {mean_scores}\n"
+                   f'Fitnesses: {["%.2f"%fitness for fitness in fitnesses]}\n'
+                   f'5 fitness avgs: {["%.2f"%np.mean(agent.fitness[-5:]) for agent in pop]}')
 
         # Tournament selection and population mutation
         elite, pop = tournament.select(pop)
