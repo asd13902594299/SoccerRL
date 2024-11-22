@@ -1,9 +1,47 @@
 from soccer.simple_four_players import soccer_simple_4player
 import supersuit as ss
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
+
 import torch
 import argparse
+import csv
 
+
+# Custom callback class, extends BaseCallback from stable_baselines3
+# This is so we can override the _on_rollout_end method to log loss values to a file
+class LoggingCallback(BaseCallback):
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+        self.csv_file = open('test_sb3_two_player_logs.csv', 'w', newline='')
+        self.writer = csv.writer(self.csv_file)
+        # Write the header row
+        self.writer.writerow(['timesteps', 'loss', 'policy_gradient_loss', 'value_loss', 'entropy_loss', 'approx_kl', 'clip_fraction', 'explained_variance'])
+
+    def _on_step(self) -> bool:
+        # Need this as an abstract method to avoid errors
+        # Check ...\stable_baselines3\common\callbacks.py
+        return True
+    
+    def _on_rollout_end(self):
+        # Get the current logs
+        logs = self.model.logger.name_to_value
+        # Get the desired metrics
+        timestep = self.num_timesteps
+        loss = logs.get('train/loss')
+        pg_loss = logs.get('train/policy_gradient_loss')
+        value_loss = logs.get('train/value_loss')
+        entropy_loss = logs.get('train/entropy_loss')
+        approx_kl = logs.get('train/approx_kl')
+        clip_fraction = logs.get('train/clip_fraction')
+        explained_variance = logs.get('train/explained_variance')
+
+        # Write the metrics to CSV
+        self.writer.writerow([timestep, loss, pg_loss, value_loss, entropy_loss, approx_kl, clip_fraction, explained_variance])
+        self.csv_file.flush()
+
+    def _on_training_end(self):
+        self.csv_file.close()
 
 def train():
     env = soccer_simple_4player.parallel_env(max_cycles=175, render_mode=None)
@@ -21,21 +59,24 @@ def train():
 
     print(f"Device: {device}, Device name: {device_name}")
 
+    # Create an instance of the callback for logging
+    logging_callback = LoggingCallback()
+
     model = PPO("MlpPolicy", env, verbose=1, device=device,
                 learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=256)
-    # model.learn(total_timesteps=4200000)
-    # model.learn(total_timesteps=3100000)
-    model.learn(total_timesteps=1500000)
-    # model.learn(total_timesteps=1048576)
-    # model.learn(total_timesteps=700000)
-    # model.learn(total_timesteps=524288)
-    # model.learn(total_timesteps=300000)
-    # model.learn(total_timesteps=262144)
-    # model.learn(total_timesteps=196608)
-    # model.learn(total_timesteps=163840)
-    # model.learn(total_timesteps=131072)
-    # model.learn(total_timesteps=100000)
-    # model.learn(total_timesteps=65536)
+    # model.learn(total_timesteps=4200000, callback=logging_callback)
+    # model.learn(total_timesteps=3100000, callback=logging_callback)
+    model.learn(total_timesteps=1500000, callback=logging_callback)
+    # model.learn(total_timesteps=1048576, callback=logging_callback)
+    # model.learn(total_timesteps=700000, callback=logging_callback)
+    # model.learn(total_timesteps=524288, callback=logging_callback)
+    # model.learn(total_timesteps=300000, callback=logging_callback)
+    # model.learn(total_timesteps=262144, callback=logging_callback)
+    # model.learn(total_timesteps=196608, callback=logging_callback)
+    # model.learn(total_timesteps=163840, callback=logging_callback)
+    # model.learn(total_timesteps=131072, callback=logging_callback)
+    # model.learn(total_timesteps=100000, callback=logging_callback)
+    # model.learn(total_timesteps=65536, callback=logging_callback
     model.save("simple_four_player")
 
     env.close()
