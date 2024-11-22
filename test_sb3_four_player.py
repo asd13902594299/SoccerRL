@@ -13,7 +13,7 @@ import csv
 class LoggingCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
-        self.csv_file = open('test_sb3_two_player_logs.csv', 'w', newline='')
+        self.csv_file = open('test_sb3_four_player_logs.csv', 'w', newline='')
         self.writer = csv.writer(self.csv_file)
         # Write the header row
         self.writer.writerow(['timesteps', 'loss', 'policy_gradient_loss', 'value_loss', 'entropy_loss', 'approx_kl', 'clip_fraction', 'explained_variance'])
