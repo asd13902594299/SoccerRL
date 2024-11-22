@@ -1,6 +1,8 @@
 from soccer.simple_four_players import soccer_simple_4player
 import supersuit as ss
 from stable_baselines3 import PPO
+import torch
+import argparse
 
 
 def train():
@@ -10,7 +12,16 @@ def train():
     env = ss.concat_vec_envs_v1(
         env, 8, num_cpus=8, base_class="stable_baselines3")
 
-    model = PPO("MlpPolicy", env, verbose=1, device="cuda",
+    if torch.cuda.is_available():
+        device = "cuda"
+        device_name = torch.cuda.get_device_name(0)
+    else:
+        device = "cpu"
+        device_name = "CPU"
+
+    print(f"Device: {device}, Device name: {device_name}")
+
+    model = PPO("MlpPolicy", env, verbose=1, device=device,
                 learning_rate=0.0001, ent_coef=0.01, gamma=0.97, batch_size=256)
     # model.learn(total_timesteps=4200000)
     # model.learn(total_timesteps=3100000)
@@ -74,5 +85,11 @@ def eval():
 
 
 if __name__ == "__main__":
-    # train()
-    eval()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--mode', choices=['train', 'eval'], required=True)
+    args = parser.parse_args()
+
+    if args.mode == 'train':
+        train()
+    elif args.mode == 'eval':
+        eval()

@@ -4,6 +4,7 @@ from soccer.simple_four_players import soccer_simple_4player
 from pettingzoo.mpe import simple_speaker_listener_v4
 from tqdm import trange
 from tqdm import tqdm
+import argparse
 
 from agilerl.components.multi_agent_replay_buffer import MultiAgentReplayBuffer
 from agilerl.vector.pz_async_vec_env import AsyncPettingZooVecEnv
@@ -364,5 +365,11 @@ def eval():
 
 
 if __name__ == "__main__":
-    train()
-    eval()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--mode', choices=['train', 'eval'], required=True)
+    args = parser.parse_args()
+
+    if args.mode == 'train':
+        train()
+    elif args.mode == 'eval':
+        eval()
